@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  alert-notify:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: alert-notify:latest
+    container_name: alert-notify
+    restart: always
+    ports:
+      - "8000:8000"
+    command: ["./main", "serve"]
+    environment:
+      - WEBHOOK_URL=https://superfan.myasustor.com:38065/hooks/55j1iuudktgcupsju8dk4hnfxr

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-notify
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-notify
+  template:
+    metadata:
+      labels:
+        app: alert-notify
+    spec:
+      containers:
+        - name: alert-notify
+          image: alert-notify
+          command: ["./main"]
+          args: ["serve"]
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+            requests:
+              cpu: "200m"
+              memory: "128Mi"
+          env:
+            - name: WEBHOOK_URL
+              value: "https://superfan.myasustor.com:38065/hooks/55j1iuudktgcupsju8dk4hnfxr"
