@@ -1,5 +1,5 @@
 # Use the official Golang image as a build stage
-FROM harbor.sangoai.com/library/golang:1.23.6-alpine3.21 AS builder
+FROM golang:1.23.6-alpine3.21 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -18,7 +18,7 @@ COPY . .
 RUN go build -o alert-notify main.go .
 
 # Use a minimal base image for the final stage
-FROM harbor.sangoai.com/library/alpine:3.21.3
+FROM alpine:3.21.3
 
 # Set the working directory inside the container
 WORKDIR /app
