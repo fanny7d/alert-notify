@@ -33,19 +33,10 @@ type ChatMessage struct {
 	Text string `json:"text"`
 }
 
-func sendToChatApp(message ChatMessage) error {
-	// Get the webhook URL from the environment variable
+func sendToChatApp(payload []byte) error {
 	webhookURL := os.Getenv("WEBHOOK_URL")
 	if webhookURL == "" {
 		return fmt.Errorf("WEBHOOK_URL is not set")
-	}
-
-	// Format the message as Markdown
-	payload, err := json.Marshal(map[string]string{
-		"text": message.Text,
-	})
-	if err != nil {
-		return err
 	}
 
 	log.Printf("Sending payload: %s", string(payload))
@@ -63,39 +54,55 @@ func sendToChatApp(message ChatMessage) error {
 	return nil
 }
 
+func formatAlertMessage(alert Alert) map[string]interface{} {
+	color := "#FF0000" // Default to red for "firing"
+	if alert.Status == "resolved" {
+		color = "#00FF00" // Green for "resolved"
+	}
+
+	log.Printf("Alert status: %s, color: %s", alert.Status, color)
+
+	return map[string]interface{}{
+		"attachments": []map[string]interface{}{
+			{
+				"color": color,
+				"text": fmt.Sprintf(
+					"**Alert Name:** %s\n"+
+						"**Status:** %s\n"+
+						"**Description:** %s",
+					alert.Labels["alertname"],
+					alert.Status,
+					alert.Annotations["description"],
+				),
+				"fields": []map[string]interface{}{
+					{"short": false, "title": "Starts At", "value": alert.StartsAt},
+					{"short": false, "title": "Ends At", "value": alert.EndsAt},
+				},
+			},
+		},
+	}
+}
+
 func alertHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received a request")
 
 	var payload AlertmanagerPayload
-
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		log.Printf("Failed to decode request body: %v", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
+		log.Printf("Failed to decode request body: %v", err)
 		return
 	}
 
-	log.Printf("Decoded payload: %+v", payload)
-
 	for _, alert := range payload.Alerts {
-		// Format the message using an enhanced Markdown template
-		message := ChatMessage{
-			Text: fmt.Sprintf(
-				"**🚨 Alert Notification 🚨**\n\n"+
-					"**Alert Name:** [%s](https://your-link-here.com)\n"+
-					"**Status:** %s\n"+
-					"**Description:** %s\n"+
-					"**Starts At:** %s\n"+
-					"**Ends At:** %s\n"+
-					"---",
-				alert.Labels["alertname"],
-				alert.Status,
-				alert.Annotations["description"],
-				alert.StartsAt,
-				alert.EndsAt,
-			),
+		message := formatAlertMessage(alert)
+
+		payload, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Failed to marshal message: %v", err)
+			continue
 		}
 
-		if err := sendToChatApp(message); err != nil {
+		if err := sendToChatApp(payload); err != nil {
 			log.Printf("Failed to send message: %v", err)
 		} else {
 			log.Println("Message sent successfully")
@@ -126,14 +133,4 @@ from Alertmanager and forwards them to a chat application.`,
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

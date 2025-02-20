@@ -1,5 +1,5 @@
 # Use the official Golang image as a build stage
-FROM golang:1.23.6-alpine3.21 AS builder
+FROM harbor.sangoai.com/library/golang:1.23.6-alpine3.21 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -15,10 +15,10 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o main .
+RUN go build -o alert-notify main.go .
 
 # Use a minimal base image for the final stage
-FROM alpine:3.21.3
+FROM harbor.sangoai.com/library/alpine:3.21.3
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -30,4 +30,4 @@ COPY --from=builder /app/main .
 EXPOSE 8000
 
 # Command to run the application
-CMD ["./main", "serve"] 
+CMD ["./alert-notify", "serve" ] 

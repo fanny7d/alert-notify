@@ -14,11 +14,13 @@ spec:
     spec:
       containers:
         - name: alert-notify
-          image: alert-notify
-          command: ["./main"]
-          args: ["serve"]
+          image: harbor.sangoai.com/devops/alert-notify:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
+          env:
+            - name: WEBHOOK_URL
+              value: "https://superfan.myasustor.com:38065/hooks/55j1iuudktgcupsju8dk4hnfxr"
           resources:
             limits:
               cpu: "500m"
@@ -26,6 +28,3 @@ spec:
             requests:
               cpu: "200m"
               memory: "128Mi"
-          env:
-            - name: WEBHOOK_URL
-              value: "https://superfan.myasustor.com:38065/hooks/55j1iuudktgcupsju8dk4hnfxr"
